@@ -5,14 +5,16 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators import StageToRedshiftOperator
 #import sql
 
-def create_copy_staging_tables(
+def load_staging_tables(
     parent_dag_name,
     task_id,
     redshift_conn_id,
     aws_credentials_id,
+    s3_path,
     target_table,
     data_type,
-    s3_path,
+    data_format,
+    additional_paramaters,
     sql_stmt,
     *args, **kwargs):
     dag = DAG(
@@ -34,6 +36,8 @@ def create_copy_staging_tables(
     aws_credentials_id=aws_credentials_id,
     target_table=target_table,
     data_type=data_type,
+    data_format=data_format,
+    additional_paramaters=additional_paramaters,
     s3_path=s3_path,
     dag=dag
     )

@@ -8,7 +8,7 @@ class DataQualityOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self,
-                 # Define your operators params (with defaults) here
+                 # Define operators params (with defaults) here
                  # Example:
                  # conn_id = your-connection-name
                  *args, **kwargs):

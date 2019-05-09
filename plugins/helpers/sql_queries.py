@@ -36,7 +36,8 @@ CREATE TABLE public.songs (
 """
 
 	create_staging_events_SQL = """
-CREATE TABLE public.staging_events (
+	DROP TABLE IF EXISTS public.staging_events ;
+	CREATE TABLE public.staging_events (
 	artist varchar(256),
 	auth varchar(256),
 	firstname varchar(256),
@@ -58,7 +59,9 @@ CREATE TABLE public.staging_events (
 );
 """
 
-	create_staging_songs_SQL = """CREATE TABLE public.staging_songs (
+	create_staging_songs_SQL = """
+	DROP TABLE IF EXISTS public.staging_songs ;
+	CREATE TABLE public.staging_songs (
 	num_songs int4,
 	artist_id varchar(256),
 	artist_name varchar(256),
