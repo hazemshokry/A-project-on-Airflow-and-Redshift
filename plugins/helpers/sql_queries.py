@@ -1,6 +1,6 @@
 class SqlQueries:
 	create_artists_table_SQL = """
-CREATE TABLE public.artists (
+CREATE TABLE IF NOT EXISTS public.artists (
 	artistid varchar(256) NOT NULL,
 	name varchar(256),
 	location varchar(256),
@@ -10,7 +10,7 @@ CREATE TABLE public.artists (
 """
 
 	create_songplays_table_SQL = """
-CREATE TABLE public.songplays (
+CREATE TABLE IF NOT EXISTS public.songplays (
 	playid varchar(32) NOT NULL,
 	start_time timestamp NOT NULL,
 	userid int4 NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE public.songplays (
 """
 
 	create_songs_table_SQL = """
-CREATE TABLE public.songs (
+CREATE TABLE IF NOT EXISTS public.songs (
 	songid varchar(256) NOT NULL,
 	title varchar(256),
 	artistid varchar(256),
@@ -36,8 +36,7 @@ CREATE TABLE public.songs (
 """
 
 	create_staging_events_SQL = """
-	DROP TABLE IF EXISTS public.staging_events ;
-	CREATE TABLE public.staging_events (
+	CREATE TABLE IF NOT EXISTS public.staging_events (
 	artist varchar(256),
 	auth varchar(256),
 	firstname varchar(256),
@@ -60,8 +59,7 @@ CREATE TABLE public.songs (
 """
 
 	create_staging_songs_SQL = """
-	DROP TABLE IF EXISTS public.staging_songs ;
-	CREATE TABLE public.staging_songs (
+	CREATE TABLE IF NOT EXISTS public.staging_songs (
 	num_songs int4,
 	artist_id varchar(256),
 	artist_name varchar(256),
@@ -75,7 +73,7 @@ CREATE TABLE public.songs (
 );
 """
 
-	create_users_table = """CREATE TABLE public.users (
+	create_users_table = """CREATE TABLE IF NOT EXISTS public.users (
 	userid int4 NOT NULL,
 	first_name varchar(256),
 	last_name varchar(256),
@@ -85,6 +83,7 @@ CREATE TABLE public.songs (
 );
 """
 	songplay_table_insert = """
+	INSERT INTO songplays (playid, start_time, userid, level, songid, artistid, sessionid, location, user_agent)
         SELECT
                 md5(events.sessionid || events.start_time) songplay_id,
                 events.start_time, 
@@ -104,7 +103,7 @@ CREATE TABLE public.songs (
                 AND events.length = songs.duration
     """
 
-	user_table_insert = """
+	user_table_insert = """ INSERT INTO USERS (userid, first_name, last_name, gender, level)
         SELECT distinct userid, firstname, lastname, gender, level
         FROM staging_events
         WHERE page='NextSong'

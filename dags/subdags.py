@@ -2,7 +2,7 @@ from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.postgres_operator import PostgresOperator
-from airflow.operators import StageToRedshiftOperator
+from airflow.operators import (StageToRedshiftOperator, LoadDimensionOperator)
 #import sql
 
 def load_staging_tables(
@@ -46,3 +46,42 @@ def load_staging_tables(
     
     return dag
     
+def load_dim_tables (
+    parent_dag_name,
+    task_id,
+    redshift_conn_id,
+    target_table,
+    sql_create_stmt,
+    sql_load_stmt,
+    insert_mode,
+    *args, **kwargs):
+    dag = DAG(
+        f"{parent_dag_name}.{task_id}",
+        start_date = datetime(2019, 1, 12),
+        **kwargs
+    )
+
+    if (insert_mode == 0):
+        sql_load_stmt = "DROP TABLE IF EXISTS " + target_table + "; " + sql_create_stmt + sql_load_stmt
+    else:
+        pass
+
+    
+    create_task = PostgresOperator(
+        task_id=f"create_{target_table}_table",
+        dag=dag,
+        postgres_conn_id=redshift_conn_id,
+        sql=sql_create_stmt
+    )
+
+    load_task = LoadDimensionOperator(
+        task_id=f"load_{target_table}_table",
+        sql_load_stmt = sql_load_stmt,
+        redshift_conn_id=redshift_conn_id,
+        target_table=target_table,
+        dag=dag
+    )
+
+    create_task >> load_task
+
+    return dag

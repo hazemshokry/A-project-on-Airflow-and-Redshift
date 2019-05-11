@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from helpers import SqlQueries
-from subdags import load_staging_tables
+from subdags import (load_staging_tables,load_dim_tables)
 
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.dummy_operator import DummyOperator
@@ -14,9 +14,9 @@ from airflow.operators import (LoadFactOperator,
 
 default_args = {
     'owner': 'Hazem Sayed',
-    'retries':3,
+    #'retries':3,
     'email_on_failure': False,
-    'retry_delay': timedelta(minutes=5),
+    #'retry_delay': timedelta(minutes=5),
     'depends_on_past': False
 }
 
@@ -24,7 +24,7 @@ dag = DAG('Airflow_Redshift',
           default_args=default_args,
           start_date = datetime(2019, 1, 12),
           description='Load and transform data in Redshift with Airflow',
-          schedule_interval='@monthly',
+          schedule_interval='@hourly',
           max_active_runs=1,
           catchup=False
         )
@@ -68,10 +68,24 @@ stage_songs_to_redshift = SubDagOperator(
 
 load_songplays_table = LoadFactOperator(
     task_id='Load_songplays_fact_table',
+    redshift_conn_id="redshift",
+    sql_create_stmt=SqlQueries.create_songplays_table_SQL,
+    sql_load_stmt=SqlQueries.songplay_table_insert,
     dag=dag
+
 )
 
-load_user_dimension_table = LoadDimensionOperator(
+load_user_dimension_table = SubDagOperator(
+    subdag=load_dim_tables(
+        parent_dag_name='Airflow_Redshift',
+        task_id='Load_user_dim_table',
+        redshift_conn_id="redshift",
+        target_table="public.users",
+        sql_create_stmt=SqlQueries.create_users_table,
+        sql_load_stmt=SqlQueries.user_table_insert,
+        insert_mode=0
+    ),
+
     task_id='Load_user_dim_table',
     dag=dag
 )
@@ -100,3 +114,6 @@ end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
 start_operator >> stage_events_to_redshift
 start_operator >> stage_songs_to_redshift
+stage_events_to_redshift >> load_songplays_table
+stage_songs_to_redshift >> load_songplays_table
+load_songplays_table >> load_user_dimension_table
