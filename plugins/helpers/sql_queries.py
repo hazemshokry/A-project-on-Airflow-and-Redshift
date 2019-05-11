@@ -35,6 +35,18 @@ CREATE TABLE IF NOT EXISTS public.songs (
 );
 """
 
+	time_table_create_SQL = """CREATE TABLE IF NOT EXISTS public.times 
+(
+    starttime TIMESTAMP PRIMARY KEY NOT NULL sortkey,
+    hour INTEGER,
+    day INTEGER,
+    week INTEGER,
+    month INTEGER,
+    year INTEGER,
+    weekday INTEGER
+);
+"""
+
 	create_staging_events_SQL = """
 	CREATE TABLE IF NOT EXISTS public.staging_events (
 	artist varchar(256),
@@ -110,16 +122,19 @@ CREATE TABLE IF NOT EXISTS public.songs (
     """
 	
 	song_table_insert = """
+	INSERT INTO songs (songid, title, artistid, year, duration)
         SELECT distinct song_id, title, artist_id, year, duration
         FROM staging_songs
     """
 	
 	artist_table_insert = """
+	INSERT INTO artists (artistid, name, location, latitude, longitude)
         SELECT distinct artist_id, artist_name, artist_location, artist_latitude, artist_longitude
         FROM staging_songs
     """
 	
 	time_table_insert = """
+	INSERT INTO TIMES (starttime, hour, day, week, month, year, weekday)
         SELECT start_time, extract(hour from start_time), extract(day from start_time), extract(week from start_time), 
                extract(month from start_time), extract(year from start_time), extract(dayofweek from start_time)
         FROM songplays

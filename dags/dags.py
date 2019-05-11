@@ -90,17 +90,47 @@ load_user_dimension_table = SubDagOperator(
     dag=dag
 )
 
-load_song_dimension_table = LoadDimensionOperator(
+load_song_dimension_table = SubDagOperator(
+    subdag=load_dim_tables(
+        parent_dag_name='Airflow_Redshift',
+        task_id='Load_song_dim_table',
+        redshift_conn_id="redshift",
+        target_table="public.songs",
+        sql_create_stmt=SqlQueries.create_songs_table_SQL,
+        sql_load_stmt=SqlQueries.song_table_insert,
+        insert_mode=0
+    ),
+
     task_id='Load_song_dim_table',
     dag=dag
 )
 
-load_artist_dimension_table = LoadDimensionOperator(
+load_artist_dimension_table = SubDagOperator(
+    subdag=load_dim_tables(
+        parent_dag_name='Airflow_Redshift',
+        task_id='Load_artist_dim_table',
+        redshift_conn_id="redshift",
+        target_table="public.artists",
+        sql_create_stmt=SqlQueries.create_artists_table_SQL,
+        sql_load_stmt=SqlQueries.artist_table_insert,
+        insert_mode=0
+    ),
+
     task_id='Load_artist_dim_table',
     dag=dag
 )
 
-load_time_dimension_table = LoadDimensionOperator(
+load_time_dimension_table = SubDagOperator(
+    subdag=load_dim_tables(
+        parent_dag_name='Airflow_Redshift',
+        task_id='Load_time_dim_table',
+        redshift_conn_id="redshift",
+        target_table="public.times",
+        sql_create_stmt=SqlQueries.time_table_create_SQL,
+        sql_load_stmt=SqlQueries.time_table_insert,
+        insert_mode=0
+    ),
+
     task_id='Load_time_dim_table',
     dag=dag
 )
@@ -117,3 +147,6 @@ start_operator >> stage_songs_to_redshift
 stage_events_to_redshift >> load_songplays_table
 stage_songs_to_redshift >> load_songplays_table
 load_songplays_table >> load_user_dimension_table
+load_songplays_table >> load_song_dimension_table
+load_songplays_table >> load_artist_dimension_table
+load_songplays_table >> load_time_dimension_table
