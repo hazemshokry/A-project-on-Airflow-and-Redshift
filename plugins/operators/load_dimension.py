@@ -19,8 +19,10 @@ class LoadDimensionOperator(BaseOperator):
         self.sql_load_stmt = sql_load_stmt
 
     def execute(self, context):
+        #context['ti'].xcom_push(key='table_name', value=self.target_table)
+
         redshift = PostgresHook(postgres_conn_id='redshift')
 
         self.log.info(f"Loading {self.target_table} table in Redshift")
-        self.log.info(print(self.redshift_conn_id))
+        
         redshift.run(self.sql_load_stmt)

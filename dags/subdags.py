@@ -2,7 +2,7 @@ from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.postgres_operator import PostgresOperator
-from airflow.operators import (StageToRedshiftOperator, LoadDimensionOperator)
+from airflow.operators import (StageToRedshiftOperator, LoadDimensionOperator, DataQualityOperator)
 #import sql
 
 def load_staging_tables(
@@ -13,9 +13,9 @@ def load_staging_tables(
     s3_path,
     target_table,
     data_type,
-    data_format,
-    additional_paramaters,
     sql_stmt,
+    data_format = "",
+    additional_paramaters = "",
     *args, **kwargs):
     dag = DAG(
         f"{parent_dag_name}.{task_id}",
@@ -76,6 +76,7 @@ def load_dim_tables (
 
     load_task = LoadDimensionOperator(
         task_id=f"load_{target_table}_table",
+        provide_context=True,
         sql_load_stmt = sql_load_stmt,
         redshift_conn_id=redshift_conn_id,
         target_table=target_table,
@@ -83,5 +84,48 @@ def load_dim_tables (
     )
 
     create_task >> load_task
+
+    return dag
+
+def data_quality_check (
+    parent_dag_name,
+    task_id,
+    redshift_conn_id,
+    *args, **kwargs):
+    dag = DAG(
+        f"{parent_dag_name}.{task_id}",
+        start_date = datetime(2019, 1, 12),
+        **kwargs
+    )
+
+    users_check_task = DataQualityOperator (
+        task_id="check_public.users_quality",
+        redshift_conn_id=redshift_conn_id,
+        dag = dag,
+        table = "public.users"
+    )
+
+    artists_check_task = DataQualityOperator (
+        task_id="check_public.artists_quality",
+        redshift_conn_id=redshift_conn_id,
+        dag = dag,
+        table = "public.artists"
+    )
+
+    songs_check_task = DataQualityOperator (
+        task_id="check_public.songs_quality",
+        redshift_conn_id=redshift_conn_id,
+        dag = dag,
+        table = "public.songs"
+    )
+
+    times_check_task = DataQualityOperator (
+        task_id="check_public.times_quality",
+        redshift_conn_id=redshift_conn_id,
+        dag = dag,
+        table = "public.times"
+    )
+
+    users_check_task >> artists_check_task >> songs_check_task >> times_check_task
 
     return dag

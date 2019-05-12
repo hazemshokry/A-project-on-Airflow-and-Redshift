@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from helpers import SqlQueries
-from subdags import (load_staging_tables,load_dim_tables)
+from airflow.operators import PythonOperator
+
+from subdags import (load_staging_tables, load_dim_tables, data_quality_check)
 
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators import (LoadFactOperator,
-                                LoadDimensionOperator, DataQualityOperator)
+from airflow.operators import (LoadFactOperator)
 
 # AWS_KEY = os.environ.get('AWS_KEY')
 # AWS_SECRET = os.environ.get('AWS_SECRET')
@@ -17,7 +18,8 @@ default_args = {
     #'retries':3,
     'email_on_failure': False,
     #'retry_delay': timedelta(minutes=5),
-    'depends_on_past': False
+    'depends_on_past': False,
+    'provide_context': True
 }
 
 dag = DAG('Airflow_Redshift',
@@ -33,16 +35,15 @@ start_operator = DummyOperator(task_id='Begin_execution',  dag=dag)
 
 stage_events_to_redshift = SubDagOperator(
     subdag=load_staging_tables(
-        'Airflow_Redshift',
-        'Stage_events',
-        'redshift',
-        'aws_credentials',
-        's3://dend/log_data',
-        'public.staging_events',
-        'CSV',
-        '',
-        "DELIMITER ',' IGNOREHEADER 1",
-        SqlQueries.create_staging_events_SQL
+        parent_dag_name = 'Airflow_Redshift',
+        task_id = 'Stage_events',
+        redshift_conn_id = 'redshift',
+        aws_credentials_id = 'aws_credentials',
+        s3_path = 's3://dend/log_data',
+        target_table = 'public.staging_events',
+        data_type = 'CSV',
+        additional_paramaters = "DELIMITER ',' IGNOREHEADER 1",
+        sql_stmt = SqlQueries.create_staging_events_SQL
 ),
     task_id = "Stage_events",
     dag = dag
@@ -51,16 +52,15 @@ stage_events_to_redshift = SubDagOperator(
 
 stage_songs_to_redshift = SubDagOperator(
     subdag=load_staging_tables(
-        'Airflow_Redshift',
-        'Stage_songs',
-        'redshift',
-        'aws_credentials',
-        's3://dend/song_data',
-        'public.staging_songs',
-        'JSON',
-        "'auto'",  
-        '',
-        SqlQueries.create_staging_songs_SQL
+        parent_dag_name = 'Airflow_Redshift',
+        task_id = 'Stage_songs',
+        redshift_conn_id = 'redshift',
+        aws_credentials_id = 'aws_credentials',
+        s3_path = 's3://dend/song_data',
+        target_table = 'public.staging_songs',
+        data_type = 'JSON',
+        data_format = "'auto'",  
+        sql_stmt = SqlQueries.create_staging_songs_SQL
 ),
     task_id = "Stage_songs",
     dag = dag
@@ -102,7 +102,7 @@ load_song_dimension_table = SubDagOperator(
     ),
 
     task_id='Load_song_dim_table',
-    dag=dag
+    dag=dag,
 )
 
 load_artist_dimension_table = SubDagOperator(
@@ -117,7 +117,7 @@ load_artist_dimension_table = SubDagOperator(
     ),
 
     task_id='Load_artist_dim_table',
-    dag=dag
+    dag=dag,
 )
 
 load_time_dimension_table = SubDagOperator(
@@ -135,10 +135,16 @@ load_time_dimension_table = SubDagOperator(
     dag=dag
 )
 
-run_quality_checks = DataQualityOperator(
-    task_id='Run_data_quality_checks',
+run_quality_checks = SubDagOperator(
+    subdag=data_quality_check(
+    parent_dag_name='Airflow_Redshift',
+    task_id='data_quality_check',
+    redshift_conn_id = "redshift"
+),
+    task_id='data_quality_check',
     dag=dag
 )
+
 
 end_operator = DummyOperator(task_id='Stop_execution',  dag=dag)
 
@@ -150,3 +156,8 @@ load_songplays_table >> load_user_dimension_table
 load_songplays_table >> load_song_dimension_table
 load_songplays_table >> load_artist_dimension_table
 load_songplays_table >> load_time_dimension_table
+load_user_dimension_table >> run_quality_checks
+load_song_dimension_table >> run_quality_checks
+load_artist_dimension_table >> run_quality_checks
+load_time_dimension_table >> run_quality_checks
+run_quality_checks >> end_operator

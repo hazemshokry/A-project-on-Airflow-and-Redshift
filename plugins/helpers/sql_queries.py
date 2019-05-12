@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS public.songs (
     """
 	
 	artist_table_insert = """
-	INSERT INTO artists (artistid, name, location, latitude, longitude)
+	INSERT INTO artists (artistid, name, location, lattitude, longitude)
         SELECT distinct artist_id, artist_name, artist_location, artist_latitude, artist_longitude
         FROM staging_songs
     """
