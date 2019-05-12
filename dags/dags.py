@@ -15,9 +15,9 @@ from airflow.operators import (LoadFactOperator)
 
 default_args = {
     'owner': 'Hazem Sayed',
-    #'retries':3,
+    'retries':3,
     'email_on_failure': False,
-    #'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=5),
     'depends_on_past': False,
     'provide_context': True
 }
