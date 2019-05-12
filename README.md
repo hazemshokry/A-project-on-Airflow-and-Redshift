@@ -29,11 +29,6 @@ The company goal is to query this data sets and find some analytics and insights
 
 ##### Step4: Processing Data Quality Checks for Number of records and NULL values
 
-##### Step5: Find some insights about the result data.
-In the dashboard.ipynb we can find some visualization and statistcs about users who used the app.
-
-Example: Top users who used the app after getting their names from users table
-![top_users!](/images/top_users2.png "Top Users")
 
 #### Project Files:
 1. dags folder: Contains dags and sub dags for my workflow.
