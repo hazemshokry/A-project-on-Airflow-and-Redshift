@@ -40,3 +40,25 @@ The company goal is to query this data sets and find some analytics and insights
 1. Put the requiered credentials (AWS and REDSHIFT) in your airflow connections page.
 2. Run your webserver weather you're running it on your local or on your docker.
 3. Start the dag and watch out the pipeline is being completed.
+
+#### How to run the project on docker-compose
+* Clone this repo
+* Install the prerequisites
+* Run the service
+
+##### Prerequisites
+* Install Docker https://www.docker.com/
+* Install Docker Compose https://docs.docker.com/compose/install/
+* Following the Airflow release from https://pypi.python.org/pypi/apache-airflow
+
+##### Steps
+1. Navigate to the project folder
+2. Run the web service with docker
+```
+docker-compose up -d
+docker-compose up -d
+
+# Build the image
+# docker-compose up -d --build
+```
+3. Check http://localhost:8080/
